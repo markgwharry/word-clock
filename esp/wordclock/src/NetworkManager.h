@@ -1,14 +1,14 @@
-#ifndef NETWORK_MANAGER_H
-#define NETWORK_MANAGER_H
+#ifndef WIFI_TIME_MANAGER_H
+#define WIFI_TIME_MANAGER_H
 
 #include <WiFi.h>
 #include <time.h>
 #include <HTTPClient.h>
 
-class NetworkManager
+class WiFiTimeManager
 {
 public:
-    NetworkManager(char *ssid, char *password, long gmtOffset_sec, int daylightOffset_sec);
+    WiFiTimeManager(char *ssid, char *password, long gmtOffset_sec, int daylightOffset_sec);
     void setup();
     void update();
     struct tm getLocalTimeStruct();

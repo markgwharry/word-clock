@@ -3,10 +3,10 @@
 
 #define MAX_GIF_SIZE 32768 // 32KB limit
 
-NetworkManager::NetworkManager(char *ssid, char *password, long gmtOffset_sec, int daylightOffset_sec)
+WiFiTimeManager::WiFiTimeManager(char *ssid, char *password, long gmtOffset_sec, int daylightOffset_sec)
     : ssid(ssid), password(password), gmtOffset_sec(gmtOffset_sec), daylightOffset_sec(daylightOffset_sec), lastSyncTime(0), gifBuffer(nullptr), gifBufferSize(0) {}
 
-void NetworkManager::setup()
+void WiFiTimeManager::setup()
 {
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED)
@@ -19,7 +19,7 @@ void NetworkManager::setup()
     syncTimeWithNTP();
 }
 
-void NetworkManager::update()
+void WiFiTimeManager::update()
 {
     unsigned long currentMillis = millis();
     if (currentMillis - lastSyncTime >= syncInterval)
@@ -28,7 +28,7 @@ void NetworkManager::update()
     }
 }
 
-void NetworkManager::syncTimeWithNTP()
+void WiFiTimeManager::syncTimeWithNTP()
 {
     const char *ntpServer = "pool.ntp.org";
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -41,7 +41,7 @@ void NetworkManager::syncTimeWithNTP()
     lastSyncTime = millis();
 }
 
-struct tm NetworkManager::getLocalTimeStruct()
+struct tm WiFiTimeManager::getLocalTimeStruct()
 {
     struct tm timeinfo;
     if (getLocalTime(&timeinfo))
@@ -56,7 +56,7 @@ struct tm NetworkManager::getLocalTimeStruct()
     }
 }
 
-bool NetworkManager::downloadGIF(const char *gifUrl)
+bool WiFiTimeManager::downloadGIF(const char *gifUrl)
 {
     if (WiFi.status() == WL_CONNECTED)
     {
@@ -94,7 +94,7 @@ bool NetworkManager::downloadGIF(const char *gifUrl)
     }
 }
 
-uint8_t *NetworkManager::handleDownloadGIFResponse(HTTPClient &http, int gifSize)
+uint8_t *WiFiTimeManager::handleDownloadGIFResponse(HTTPClient &http, int gifSize)
 {
     WiFiClient *stream = http.getStreamPtr();
 
@@ -126,12 +126,12 @@ uint8_t *NetworkManager::handleDownloadGIFResponse(HTTPClient &http, int gifSize
     }
 }
 
-uint8_t *NetworkManager::getGifBuffer()
+uint8_t *WiFiTimeManager::getGifBuffer()
 {
     return gifBuffer;
 }
 
-size_t NetworkManager::getGifBufferSize()
+size_t WiFiTimeManager::getGifBufferSize()
 {
     return gifBufferSize;
 }
