@@ -4,7 +4,7 @@
 GifPlayer *GifPlayer::instance = nullptr;
 
 GifPlayer::GifPlayer(ClockDisplayHAL *clockDisplayHAL)
-    : clockDisplayHAL(clockDisplayHAL)
+    : clockDisplayHAL(clockDisplayHAL), storedBuffer(nullptr), storedSize(0), gifLoaded(false)
 {
     gif.begin(GIF_PALETTE_RGB888);
     instance = this;
@@ -66,12 +66,33 @@ void GifPlayer::GIFDraw(GIFDRAW *pDraw)
 
 bool GifPlayer::loadGIF(uint8_t *gifBuffer, size_t gifSize)
 {
+    // Store buffer reference for later replay
+    storedBuffer = gifBuffer;
+    storedSize = gifSize;
+
     int rc = gif.open(gifBuffer, gifSize, GIFDraw);
+    gifLoaded = (rc != 0);
+    return gifLoaded;
+}
+
+bool GifPlayer::reopenGIF()
+{
+    if (storedBuffer == nullptr || storedSize == 0)
+    {
+        return false;
+    }
+    int rc = gif.open(storedBuffer, storedSize, GIFDraw);
     return (rc != 0);
 }
 
 void GifPlayer::playGIF(unsigned long durationMs)
 {
+    // Reopen GIF if it was previously closed
+    if (!gifLoaded && !reopenGIF())
+    {
+        return;
+    }
+
     unsigned long startTime = millis();
 
     while (millis() - startTime < durationMs)
@@ -83,4 +104,5 @@ void GifPlayer::playGIF(unsigned long durationMs)
     }
 
     gif.close();
+    gifLoaded = false;  // Mark as closed so we reopen next time
 }

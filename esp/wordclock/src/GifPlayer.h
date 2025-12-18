@@ -17,6 +17,13 @@ private:
     AnimatedGIF gif;
     static void GIFDraw(GIFDRAW *pDraw);
 
+    // Store buffer reference for replay capability
+    uint8_t *storedBuffer;
+    size_t storedSize;
+    bool gifLoaded;
+
+    bool reopenGIF();
+
     static GifPlayer *instance;
 };
 
