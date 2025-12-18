@@ -118,11 +118,19 @@ void WordClock::displayTime()
 
     clockDisplayHAL->clearPixels(false);
 
-    if (hour != lastHour && minute == 0)
+    // Trigger animation every 15 minutes (0, 15, 30, 45) for testing
+    static int lastAnimationMinute = -1;
+    bool isQuarterHour = (minute == 0 || minute == 15 || minute == 30 || minute == 45);
+
+    if (isQuarterHour && minute != lastAnimationMinute)
     {
-        lastHour = hour;
+        lastAnimationMinute = minute;
         playHourlyAnimation();
         clockDisplayHAL->clearPixels(false);
+    }
+    else if (!isQuarterHour)
+    {
+        lastAnimationMinute = -1;  // Reset when not on quarter hour
     }
 
     highlightWord("IT", getRandomColor());
