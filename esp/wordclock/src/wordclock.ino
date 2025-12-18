@@ -4,12 +4,14 @@
 #include "SerialHelper.h"
 #include "config.h"
 #include "GifPlayer.h"
+#include "DisplayEffects.h"
 #include "WordClock.h"
 
 WiFiTimeManager networkManager(WIFI_SSID, WIFI_PASSWORD, GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC);
 ClockDisplayHAL clockDisplayHAL(LED_PIN, 255);
 GifPlayer gifPlayer(&clockDisplayHAL);
-WordClock wordClock(&clockDisplayHAL, &networkManager, &gifPlayer);
+DisplayEffects displayEffects(&clockDisplayHAL);
+WordClock wordClock(&clockDisplayHAL, &networkManager, &gifPlayer, &displayEffects);
 
 void setup()
 {

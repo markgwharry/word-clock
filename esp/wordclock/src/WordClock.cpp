@@ -11,8 +11,33 @@ const uint32_t COLORS[] = {
     0xFFFFFF,
     0xA52A2A};
 
-WordClock::WordClock(ClockDisplayHAL *clockDisplayHAL, WiFiTimeManager *networkManager, GifPlayer *gifPlayer)
-    : clockDisplayHAL(clockDisplayHAL), networkManager(networkManager), gifPlayer(gifPlayer), lastHour(-1), allLastHighlightedWords(""), gifDownloaded(false) {}
+WordClock::WordClock(ClockDisplayHAL *clockDisplayHAL, WiFiTimeManager *networkManager, GifPlayer *gifPlayer, DisplayEffects *displayEffects)
+    : clockDisplayHAL(clockDisplayHAL), networkManager(networkManager), gifPlayer(gifPlayer), displayEffects(displayEffects), lastHour(-1), allLastHighlightedWords(""), gifDownloaded(false), hourlyEffect(EffectType::RANDOM) {}
+
+void WordClock::setHourlyEffect(EffectType effect)
+{
+    hourlyEffect = effect;
+}
+
+EffectType WordClock::getHourlyEffect() const
+{
+    return hourlyEffect;
+}
+
+void WordClock::playHourlyAnimation()
+{
+    // Use built-in effects (more reliable than network-dependent GIFs)
+    if (displayEffects != nullptr)
+    {
+        SERIAL_PRINTLN("Playing hourly animation effect...");
+        displayEffects->playEffect(hourlyEffect, 4000);
+    }
+    // Fall back to GIF if effects not available but GIF is
+    else if (gifDownloaded && gifPlayer != nullptr)
+    {
+        gifPlayer->playGIF(4000);
+    }
+}
 
 void WordClock::setup()
 {
@@ -93,14 +118,19 @@ void WordClock::displayTime()
 
     clockDisplayHAL->clearPixels(false);
 
-    if (hour != lastHour && minute == 0)
+    // Trigger animation every 15 minutes (0, 15, 30, 45) for testing
+    static int lastAnimationMinute = -1;
+    bool isQuarterHour = (minute == 0 || minute == 15 || minute == 30 || minute == 45);
+
+    if (isQuarterHour && minute != lastAnimationMinute)
     {
-        lastHour = hour;
-        if (gifDownloaded)
-        {
-            gifPlayer->playGIF(4000);
-        }
+        lastAnimationMinute = minute;
+        playHourlyAnimation();
         clockDisplayHAL->clearPixels(false);
+    }
+    else if (!isQuarterHour)
+    {
+        lastAnimationMinute = -1;  // Reset when not on quarter hour
     }
 
     highlightWord("IT", getRandomColor());
