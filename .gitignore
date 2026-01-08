@@ -1,4 +1,6 @@
+# Ignore gifs except the ones we need for the clock
 *.gif
+!esp/wordclock/gifs/*.gif
 .idea
 *.pyc
 DS_Store

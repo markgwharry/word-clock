@@ -14,10 +14,6 @@ public:
     void setup();
     void displayTime();
 
-    // Allow setting the hourly effect type (default is RANDOM)
-    void setHourlyEffect(EffectType effect);
-    EffectType getHourlyEffect() const;
-
 private:
     int lastHour;
     String allLastHighlightedWords;
@@ -25,11 +21,8 @@ private:
     WiFiTimeManager *networkManager;
     GifPlayer *gifPlayer;
     DisplayEffects *displayEffects;
-    bool gifDownloaded;
-    EffectType hourlyEffect;
 
-    void downloadGIF();
-    void playHourlyAnimation();
+    void downloadAndPlayRandomGIF();
     void highlightWord(const String &word, uint32_t color = 0xFFFFFF);
     String getMinutesWord(int minute);
     uint32_t getRandomColor();

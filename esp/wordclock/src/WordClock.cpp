@@ -11,60 +11,52 @@ const uint32_t COLORS[] = {
     0xFFFFFF,
     0xA52A2A};
 
+const char *GIF_URLS[] = {
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/heart.gif",
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/smiley.gif",
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/star.gif",
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/rainbow.gif",
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/fireworks.gif",
+    "https://raw.githubusercontent.com/markgwharry/word-clock/main/esp/wordclock/gifs/sun.gif"};
+const int NUM_GIFS = 6;
+
 WordClock::WordClock(ClockDisplayHAL *clockDisplayHAL, WiFiTimeManager *networkManager, GifPlayer *gifPlayer, DisplayEffects *displayEffects)
-    : clockDisplayHAL(clockDisplayHAL), networkManager(networkManager), gifPlayer(gifPlayer), displayEffects(displayEffects), lastHour(-1), allLastHighlightedWords(""), gifDownloaded(false), hourlyEffect(EffectType::RANDOM) {}
-
-void WordClock::setHourlyEffect(EffectType effect)
-{
-    hourlyEffect = effect;
-}
-
-EffectType WordClock::getHourlyEffect() const
-{
-    return hourlyEffect;
-}
-
-void WordClock::playHourlyAnimation()
-{
-    // Use built-in effects (more reliable than network-dependent GIFs)
-    if (displayEffects != nullptr)
-    {
-        SERIAL_PRINTLN("Playing hourly animation effect...");
-        displayEffects->playEffect(hourlyEffect, 4000);
-    }
-    // Fall back to GIF if effects not available but GIF is
-    else if (gifDownloaded && gifPlayer != nullptr)
-    {
-        gifPlayer->playGIF(4000);
-    }
-}
+    : clockDisplayHAL(clockDisplayHAL), networkManager(networkManager), gifPlayer(gifPlayer), displayEffects(displayEffects), lastHour(-1), allLastHighlightedWords("") {}
 
 void WordClock::setup()
 {
-    downloadGIF();
+    downloadAndPlayRandomGIF();
 }
 
-void WordClock::downloadGIF()
+void WordClock::downloadAndPlayRandomGIF()
 {
-    if (!gifDownloaded)
+    int gifIndex = random(0, NUM_GIFS);
+    const char *gifUrl = GIF_URLS[gifIndex];
+
+    SERIAL_PRINT("Downloading GIF: ");
+    SERIAL_PRINTLN(gifUrl);
+
+    if (networkManager->downloadGIF(gifUrl))
     {
-        const char *gifUrl = "https://raw.githubusercontent.com/johniak/word-clock/refs/heads/main/raspberry-pi/heart_art_small.gif";
-        if (networkManager->downloadGIF(gifUrl))
+        uint8_t *gifBuffer = networkManager->getGifBuffer();
+        size_t gifSize = networkManager->getGifBufferSize();
+        if (gifSize > 0 && gifBuffer != nullptr)
         {
-            uint8_t *gifBuffer = networkManager->getGifBuffer();
-            size_t gifSize = networkManager->getGifBufferSize();
-            if (gifSize > 0 && gifBuffer != nullptr)
+            if (gifPlayer->loadGIF(gifBuffer, gifSize))
             {
-                if (gifPlayer->loadGIF(gifBuffer, gifSize))
-                {
-                    gifDownloaded = true;
-                    SERIAL_PRINTLN("GIF downloaded and loaded successfully.");
-                }
+                SERIAL_PRINTLN("GIF downloaded and loaded successfully.");
+                gifPlayer->playGIF(4000);
+                clockDisplayHAL->clearPixels(false);
             }
         }
-        else
+    }
+    else
+    {
+        SERIAL_PRINTLN("Failed to download GIF, using built-in effect instead.");
+        if (displayEffects != nullptr)
         {
-            SERIAL_PRINTLN("Failed to download GIF.");
+            displayEffects->playRandomEffect(4000);
+            clockDisplayHAL->clearPixels(false);
         }
     }
 }
@@ -118,19 +110,11 @@ void WordClock::displayTime()
 
     clockDisplayHAL->clearPixels(false);
 
-    // Trigger animation every 15 minutes (0, 15, 30, 45) for testing
-    static int lastAnimationMinute = -1;
-    bool isQuarterHour = (minute == 0 || minute == 15 || minute == 30 || minute == 45);
-
-    if (isQuarterHour && minute != lastAnimationMinute)
+    // Play random GIF on the hour
+    if (hour != lastHour && minute == 0)
     {
-        lastAnimationMinute = minute;
-        playHourlyAnimation();
-        clockDisplayHAL->clearPixels(false);
-    }
-    else if (!isQuarterHour)
-    {
-        lastAnimationMinute = -1;  // Reset when not on quarter hour
+        lastHour = hour;
+        downloadAndPlayRandomGIF();
     }
 
     highlightWord("IT", getRandomColor());
